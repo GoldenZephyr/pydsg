@@ -1,0 +1,11 @@
+<package format="2">
+  <name>pydsg</name>
+  <version>0.0.0</version>
+  <description>pydsg</description>
+  <maintainer email="aaronray@mit.edu">Aaron Ray</maintainer>
+
+  <license>TODO</license>
+
+  <!-- Dependencies which this package needs to build itself. -->
+  <buildtool_depend>catkin</buildtool_depend>
+</package>
