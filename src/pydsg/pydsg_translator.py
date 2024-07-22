@@ -29,7 +29,12 @@ import parse
 SEMANTICS_TO_COLOR = np.array(
     [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1], [0, 1, 1], [1, 1, 1]]
 )
-LABEL_TO_COLOR = {"frontier": [1, 0, 0], "place": [0, 0, 0]}
+LABEL_TO_COLOR = {
+    "frontier": [1, 0, 0],
+    "place": [0, 0, 0],
+    "anti_frontier": [1, 1, 1],
+    "predicted_place": [1, 0, 1],
+}
 
 TRAVERSABLE_SEMANTICS = ["Unknown"]
 MOVEABLE_OBJECTS = ["mine"]
@@ -482,6 +487,10 @@ def make_place_3d(
 
     if p.attributes.real_place:
         label = "place"
+    elif p.attributes.is_predicted:
+        label = "predicted_place"
+    elif p.attributes.anti_frontier:
+        label = "anti_frontier"
     else:
         label = "frontier"
     color = semantics_to_color[label]
@@ -491,6 +500,7 @@ def make_place_3d(
         and (not attrs.is_predicted)
         and (not attrs.anti_frontier)
     )
+
     place = Place3d(
         hydra_symbol=str(p.id),
         from_hydra=True,
@@ -903,8 +913,13 @@ def py_to_spark_place3d(p, label_to_semantic_id):
     attrs.color = p.semantic_color * 255
     attrs.distance = p.radius
     # attrs.real_place = True if p.semantic_label == "place" else False
-    attrs.real_place = not p.predicted_place and not p.frontier
+    attrs.real_place = (
+        not p.predicted_place
+        and not p.frontier
+        and not p.semantic_label == "anti_frontier"
+    )
     attrs.predicted_place = p.predicted_place
+    attrs.anti_frontier = p.semantic_label == "anti_frontier"
     return attrs
 
 
