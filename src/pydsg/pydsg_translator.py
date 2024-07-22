@@ -486,6 +486,11 @@ def make_place_3d(
         label = "frontier"
     color = semantics_to_color[label]
 
+    is_frontier = (
+        (not attrs.real_place)
+        and (not attrs.is_predicted)
+        and (not attrs.anti_frontier)
+    )
     place = Place3d(
         hydra_symbol=str(p.id),
         from_hydra=True,
@@ -495,7 +500,7 @@ def make_place_3d(
         semantic_label=label,
         semantic_color=color,
         predicted_place=attrs.is_predicted,
-        frontier=(not attrs.real_place) and (not attrs.is_predicted),
+        frontier=is_frontier,
     )
     return place
 
