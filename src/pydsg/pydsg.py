@@ -133,6 +133,7 @@ class Room(DsgNode):
     box: np.ndarray
     boundary_shapely: geo.Polygon
     label_confidences: dict
+    predicted: bool
 
 
 @dataclass
@@ -186,6 +187,7 @@ class RoomLayer(DsgLayer):
     box: np.ndarray
     boundary_shapely: PolygonList
     label_confidences: DictList
+    predicted: np.ndarray
     edge_probability_dict: dict
     edge_probabilities: np.ndarray = None
     # connection_probability: np.ndarray = None

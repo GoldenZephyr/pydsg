@@ -611,6 +611,7 @@ def make_room(G, room_id_to_label, r):
         box=bb,
         boundary_shapely=geo.Polygon(bb),
         label_confidences=label_confidences,
+        predicted=attrs.is_predicted,
     )
 
     return room
@@ -948,6 +949,7 @@ def py_to_spark_rooms(r, room_label_to_id):
     attrs.color = r.semantic_color * 255
     attrs.semantic_label = room_label_to_id[r.semantic_label]
     attrs.semantic_class_probabilities = r.label_confidences
+    attrs.is_predicted = r.predicted
     return attrs
 
 
