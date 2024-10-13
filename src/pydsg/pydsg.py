@@ -44,6 +44,9 @@ class DsgLayer(Serializable, SoAIndexing, StructAppend):
     sibling_dict: dict
     children_dict: dict
 
+    def __contains__(self, symbol):
+        return symbol in self.hydra_index_to_local_index
+
     def __len__(self):
         return len(self.hydra_symbol)
 
@@ -217,6 +220,54 @@ class PyDSG(Serializable):
 
     gtsam_symbol_to_index: dict = None
     index_to_hydra_symbol: dict = None
+
+    def get_parents(self, key):
+        if self.objects is not None and key in self.objects:
+            return self.objects.parent_dict[key]
+        elif self.places_2d is not None and key in self.places_2d:
+            return self.places_2d.parent_dict[key]
+        elif self.places_3d is not None and key in self.places_3d:
+            return self.places_3d.parent_dict[key]
+        elif self.rooms is not None and key in self.rooms:
+            return self.rooms.parent_dict[key]
+        elif self.buildings is not None and key in self.buildings:
+            return self.buildings.parent_dict[key]
+
+    def get_siblings(self, key):
+        if self.objects is not None and key in self.objects:
+            return self.objects.sibling_dict[key]
+        elif self.places_2d is not None and key in self.places_2d:
+            return self.places_2d.sibling_dict[key]
+        elif self.places_3d is not None and key in self.places_3d:
+            return self.places_3d.sibling_dict[key]
+        elif self.rooms is not None and key in self.rooms:
+            return self.rooms.sibling_dict[key]
+        elif self.buildings is not None and key in self.buildings:
+            return self.buildings.sibling_dict[key]
+
+    def get_children(self, key):
+        if self.objects is not None and key in self.objects:
+            return self.objects.children_dict[key]
+        elif self.places_2d is not None and key in self.places_2d:
+            return self.places_2d.children_dict[key]
+        elif self.places_3d is not None and key in self.places_3d:
+            return self.places_3d.children_dict[key]
+        elif self.rooms is not None and key in self.rooms:
+            return self.rooms.children_dict[key]
+        elif self.buildings is not None and key in self.buildings:
+            return self.buildings.children_dict[key]
+
+    def __getitem__(self, key):
+        if self.objects is not None and key in self.objects:
+            return self.objects[key]
+        elif self.places_2d is not None and key in self.places_2d:
+            return self.places_2d[key]
+        elif self.places_3d is not None and key in self.places_3d:
+            return self.places_3d[key]
+        elif self.rooms is not None and key in self.rooms:
+            return self.rooms[key]
+        elif self.buildings is not None and key in self.buildings:
+            return self.buildings[key]
 
     def __copy__(self):
         copy_dict = {
