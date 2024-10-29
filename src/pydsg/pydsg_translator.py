@@ -45,6 +45,9 @@ ROOM_ID_TO_LABEL = {
     1: "hallway",
     2: "conference_room",
     3: "bathroom",
+    4: "kitchen",
+    5: "stairs",
+    6: "bedroom",
     99: "unknown",
 }
 
@@ -339,7 +342,11 @@ def update_traversability(
                 obs_z = obstruction_heights[ob_idx]
                 place_conflict_tolerance = 1  # If there is a non-traversable object *below* us, at what distance do we consider it blocking us
                 if z + height_threshold > obs_z > z - place_conflict_tolerance:
-                    good_boundary = good_boundary - bad_boundary
+                    try:
+                      good_boundary = good_boundary - bad_boundary
+                    except Exception as ex:
+                      print(ex)
+                      print('skipping')
                     # if good_boundary.intersects(bad_boundary): # TODO: figure out why this was crashing so we can re-add it?
                     #     good_boundary = good_boundary - bad_boundary
         pdsg.places_2d.boundary_shapely[ix] = good_boundary
