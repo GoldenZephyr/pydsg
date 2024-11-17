@@ -870,7 +870,6 @@ def spark_dsg_to_pydsg(
 
 def add_edges_from_pydsg(G, layer, sibling_probabilities=None):
 
-    print("edges: ", layer.sibling_dict)
     if layer.sibling_dict is not None:
         for pi in layer.hydra_symbol:
             if pi not in layer.sibling_dict:
@@ -879,7 +878,6 @@ def add_edges_from_pydsg(G, layer, sibling_probabilities=None):
                 if sibling_probabilities is None:
                     G.insert_edge(str_to_ns_value(pi), str_to_ns_value(pj))
                 else:
-                    print("edge probabilities:", sibling_probabilities)
                     ea = spark_dsg.EdgeAttributes()
                     ea.weight = sibling_probabilities[(pi, pj)]
                     G.insert_edge(str_to_ns_value(pi), str_to_ns_value(pj), ea)
