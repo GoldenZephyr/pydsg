@@ -343,10 +343,10 @@ def update_traversability(
                 place_conflict_tolerance = 1  # If there is a non-traversable object *below* us, at what distance do we consider it blocking us
                 if z + height_threshold > obs_z > z - place_conflict_tolerance:
                     try:
-                      good_boundary = good_boundary - bad_boundary
+                        good_boundary = good_boundary - bad_boundary
                     except Exception as ex:
-                      print(ex)
-                      print('skipping')
+                        print(ex)
+                        print("skipping")
                     # if good_boundary.intersects(bad_boundary): # TODO: figure out why this was crashing so we can re-add it?
                     #     good_boundary = good_boundary - bad_boundary
         pdsg.places_2d.boundary_shapely[ix] = good_boundary
@@ -638,29 +638,43 @@ def make_building(G, b):
     return building
 
 
-def get_parents(G, index_to_hydra_symbol, layer_name):
-    return {
-        str(n.id): [index_to_hydra_symbol[n.get_parent()]] if n.has_parent() else []
-        for n in G.get_layer(layer_name).nodes
+def get_sorted_connections(G, index_to_hydra_symbol, layer_name):
+    #    layer_key = spark_dsg.DsgLayers.name_to_layer_id(layer_name)
+    layer_to_ord = {
+        spark_dsg.DsgLayers.name_to_layer_id(spark_dsg.DsgLayers.OBJECTS): 1,
+        spark_dsg.DsgLayers.name_to_layer_id(spark_dsg.DsgLayers.MESH_PLACES): 2,
+        spark_dsg.DsgLayers.name_to_layer_id(spark_dsg.DsgLayers.PLACES): 3,
+        spark_dsg.DsgLayers.name_to_layer_id(spark_dsg.DsgLayers.ROOMS): 4,
+        spark_dsg.DsgLayers.name_to_layer_id(spark_dsg.DsgLayers.BUILDINGS): 5,
     }
 
+    parent_dict = {}
+    sibling_dict = {}
+    children_dict = {}
 
-def get_siblings(G, index_to_hydra_symbol, layer_name):
-    return {
-        str(n.id): [
-            index_to_hydra_symbol[m] for m in n.siblings() if m in index_to_hydra_symbol
-        ]
-        for n in G.get_layer(layer_name).nodes
-    }
+    for n in G.get_layer(layer_name).nodes:
+        sibling_dict[str(n.id)] = []
+        parent_dict[str(n.id)] = []
+        children_dict[str(n.id)] = []
 
+        for m in n.connections():
+            try:
+                mnode = G.get_node(m)
+            except Exception as e:
+                print(f"WARNING: node {str(n.id)} has connection not in DSG:")
+                print(e)
+                continue
+            mkey = mnode.layer
+            if mkey not in layer_to_ord:
+                continue
+            if layer_to_ord[mkey] == layer_to_ord[n.layer]:
+                sibling_dict[str(n.id)].append(index_to_hydra_symbol[m])
+            elif layer_to_ord[mkey] < layer_to_ord[n.layer]:
+                children_dict[str(n.id)].append(index_to_hydra_symbol[m])
+            else:
+                parent_dict[str(n.id)].append(index_to_hydra_symbol[m])
 
-def get_children(G, index_to_hydra_symbol, layer_name):
-    return {
-        str(n.id): [
-            index_to_hydra_symbol[m] for m in n.children() if m in index_to_hydra_symbol
-        ]
-        for n in G.get_layer(layer_name).nodes
-    }
+    return parent_dict, sibling_dict, children_dict
 
 
 def get_sibling_probability(G, index_to_hydra_symbol, layer_name, symbols):
@@ -771,13 +785,12 @@ def spark_dsg_to_pydsg(
     place_layer_3d.hydra_index_to_local_index = pid_to_index
     place_layer_3d.local_index_to_hydra_index = index_to_pid
 
-    get_parents_p = partial(get_parents, G, index_to_hydra_symbol)
-    get_siblings_p = partial(get_siblings, G, index_to_hydra_symbol)
-    get_children_p = partial(get_children, G, index_to_hydra_symbol)
-
-    place_layer_3d.parent_dict = get_parents_p(spark_dsg.DsgLayers.PLACES)
-    place_layer_3d.sibling_dict = get_siblings_p(spark_dsg.DsgLayers.PLACES)
-    place_layer_3d.children_dict = get_children_p(spark_dsg.DsgLayers.PLACES)
+    p, s, c = get_sorted_connections(
+        G, index_to_hydra_symbol, spark_dsg.DsgLayers.PLACES
+    )
+    place_layer_3d.parent_dict = p
+    place_layer_3d.sibling_dict = s
+    place_layer_3d.children_dict = c
 
     build_place_2d = partial(
         make_place_2d, G, semantic_id_to_label, LABEL_TO_COLOR, pid_to_index_2d
@@ -789,9 +802,12 @@ def spark_dsg_to_pydsg(
     place_layer_2d.hydra_index_to_local_index = pid_to_index_2d
     place_layer_2d.local_index_to_hydra_index = index_to_pid_2d
 
-    place_layer_2d.parent_dict = get_parents_p(spark_dsg.DsgLayers.MESH_PLACES)
-    place_layer_2d.sibling_dict = get_siblings_p(spark_dsg.DsgLayers.MESH_PLACES)
-    place_layer_2d.children_dict = get_children_p(spark_dsg.DsgLayers.MESH_PLACES)
+    p, s, c = get_sorted_connections(
+        G, index_to_hydra_symbol, spark_dsg.DsgLayers.MESH_PLACES
+    )
+    place_layer_2d.parent_dict = p
+    place_layer_2d.sibling_dict = s
+    place_layer_2d.children_dict = c
 
     build_object = partial(
         make_object,
@@ -808,9 +824,12 @@ def spark_dsg_to_pydsg(
     object_layer.hydra_index_to_local_index = oid_to_index
     object_layer.local_index_to_hydra_index = index_to_oid
 
-    object_layer.parent_dict = get_parents_p(spark_dsg.DsgLayers.OBJECTS)
-    object_layer.sibling_dict = get_siblings_p(spark_dsg.DsgLayers.OBJECTS)
-    object_layer.children_dict = get_children_p(spark_dsg.DsgLayers.OBJECTS)
+    p, s, c = get_sorted_connections(
+        G, index_to_hydra_symbol, spark_dsg.DsgLayers.OBJECTS
+    )
+    object_layer.parent_dict = p
+    object_layer.sibling_dict = s
+    object_layer.children_dict = c
 
     build_room = partial(make_room, G, room_id_to_label)
     rooms = list(map(build_room, G.get_layer(spark_dsg.DsgLayers.ROOMS).nodes))
@@ -818,9 +837,13 @@ def spark_dsg_to_pydsg(
     room_layer.hydra_index_to_local_index = rid_to_index
     room_layer.local_index_to_hydra_index = index_to_rid
 
-    room_layer.parent_dict = get_parents_p(spark_dsg.DsgLayers.ROOMS)
-    room_layer.sibling_dict = get_siblings_p(spark_dsg.DsgLayers.ROOMS)
-    room_layer.children_dict = get_children_p(spark_dsg.DsgLayers.ROOMS)
+    p, s, c = get_sorted_connections(
+        G, index_to_hydra_symbol, spark_dsg.DsgLayers.ROOMS
+    )
+    room_layer.parent_dict = p
+    room_layer.sibling_dict = s
+    room_layer.children_dict = c
+
     room_layer.edge_probability_dict = get_sibling_probability(
         G, room_id_to_label, spark_dsg.DsgLayers.ROOMS, room_layer.hydra_symbol
     )
@@ -843,9 +866,12 @@ def spark_dsg_to_pydsg(
     building_layer.hydra_index_to_local_index = bid_to_index
     building_layer.local_index_to_hydra_index = index_to_bid
 
-    building_layer.parent_dict = get_parents_p(spark_dsg.DsgLayers.BUILDINGS)
-    building_layer.sibling_dict = get_siblings_p(spark_dsg.DsgLayers.BUILDINGS)
-    building_layer.children_dict = get_children_p(spark_dsg.DsgLayers.BUILDINGS)
+    p, s, c = get_sorted_connections(
+        G, index_to_hydra_symbol, spark_dsg.DsgLayers.BUILDINGS
+    )
+    building_layer.parent_dict = p
+    building_layer.sibling_dict = s
+    building_layer.children_dict = c
 
     pdsg = PyDSG(
         objects=object_layer,
@@ -944,7 +970,6 @@ def py_to_spark_rooms(r, room_label_to_id):
 
     attrs = spark_dsg.RoomNodeAttributes()
     attrs.name = r.hydra_symbol if r.semantic_label != "unknown" else "?"
-    print("\n\n\nAttr name: ", attrs.name)
     attrs.position = r.center
 
     bb_center = np.mean(r.box, axis=0)
@@ -978,7 +1003,9 @@ def pydsg_to_spark_dsg(
                 continue
             attrs = py_to_spark_place2d(p, label_to_semantic_id)
             G.add_node(
-                spark_dsg.DsgLayers.MESH_PLACES, str_to_ns_value(p.hydra_symbol), attrs
+                spark_dsg.DsgLayers.MESH_PLACES,
+                str_to_ns_value(p.hydra_symbol),
+                attrs,
             )
         add_edges_from_pydsg(G, pdsg.places_2d)
 
