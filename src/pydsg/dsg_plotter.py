@@ -92,7 +92,7 @@ def plot_dsg_predicted_places(
 
 
 def plot_dsg_places(
-    dsg,
+    layer,
     with_boundary=True,
     with_edges=True,
     plot_mask=None,
@@ -104,23 +104,23 @@ def plot_dsg_places(
     color_center_by_semantics=False,
 ):
 
-    if dsg.places_2d is None or dsg.places_2d.center is None:
+    if layer is None or layer.center is None:
         return
     if plot_mask is None:
-        plot_mask = np.ones(len(dsg.places_2d)).astype(bool)
+        plot_mask = np.ones(len(layer)).astype(bool)
 
-    plot_mask_symbol = {s: pm for s, pm in zip(dsg.places_2d.hydra_symbol, plot_mask)}
+    plot_mask_symbol = {s: pm for s, pm in zip(layer.hydra_symbol, plot_mask)}
 
     if region is not None:
-        distances = np.linalg.norm(dsg.places_2d.center[:, :2] - region[0], axis=1)
+        distances = np.linalg.norm(layer.center[:, :2] - region[0], axis=1)
         close_enough = distances < region[1]
         plot_mask = np.logical_and(plot_mask, close_enough)
 
     if with_boundary:
         for ix, r, c in zip(
-            range(len(dsg.places_2d)),
-            dsg.places_2d.boundary_shapely,
-            dsg.places_2d.semantic_color,
+            range(len(layer)),
+            layer.boundary_shapely,
+            layer.semantic_color,
         ):
             if plot_mask[ix]:
                 if isinstance(r, geo.Polygon):
@@ -131,30 +131,30 @@ def plot_dsg_places(
                         x, y = g.exterior.xy
                         plt.plot(x, y, color=c, linewidth=boundary_lw)
 
-    rc = np.array(dsg.places_2d.center)
+    rc = np.array(layer.center)
     rc_clip = rc[plot_mask]
     if with_centers:
         if color_center_by_semantics:
             plt.scatter(
                 rc_clip[:, 0],
                 rc_clip[:, 1],
-                c=np.array(dsg.places_2d.semantic_color)[plot_mask],
+                c=np.array(layer.semantic_color)[plot_mask],
             )
         else:
             plt.scatter(rc_clip[:, 0], rc_clip[:, 1], color="k")
 
     if with_edges:
         lines = []
-        neighbors = dsg.places_2d.sibling_dict
+        neighbors = layer.sibling_dict
         for node_s in neighbors:
             if node_s not in plot_mask_symbol:
                 print("WARNING: node in sibling but not node list")
                 continue
             if not plot_mask_symbol[node_s]:
                 continue
-            start = dsg.places_2d[node_s].center[:2]
+            start = layer[node_s].center[:2]
             for node_t in neighbors[node_s]:
-                end = dsg.places_2d[node_t].center[:2]
+                end = layer[node_t].center[:2]
 
                 if node_t not in plot_mask_symbol:
                     print("WARNING: node in sibling but not node list")
@@ -167,8 +167,8 @@ def plot_dsg_places(
 
     if plot_indices:
         for ind, center in zip(
-            np.array(dsg.places_2d.hydra_symbol)[plot_mask],
-            dsg.places_2d.center[plot_mask],
+            np.array(layer.hydra_symbol)[plot_mask],
+            layer.center[plot_mask],
         ):
             plt.text(center[0], center[1], f"{ind}")
 
