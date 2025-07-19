@@ -1048,14 +1048,16 @@ def py_to_spark_rooms(r, room_label_to_id):
     attrs.name = r.hydra_symbol if r.semantic_label != "unknown" else "?"
     attrs.position = r.center
 
-    bb_center_2d = np.mean(r.box, axis=0)
-    bb_width_2d = np.max(r.box, axis=0) - np.min(r.box, axis=0)
-
-    bb_center = np.zeros(3)
-    bb_center[:2] = bb_center_2d
-
-    bb_width = np.ones(3)
-    bb_width[:2] = bb_width_2d
+    if len(r.box[0]) < 3:
+        bb_center_2d = np.mean(r.box, axis=0)
+        bb_width_2d = np.max(r.box, axis=0) - np.min(r.box, axis=0)
+        bb_center = np.zeros(3)
+        bb_center[:2] = bb_center_2d
+        bb_width = np.ones(3)
+        bb_width[:2] = bb_width_2d
+    else:
+        bb_center = np.mean(r.box, axis=0)
+        bb_width = np.max(r.box, axis=0) - np.min(r.box, axis=0)
 
     attrs.bounding_box = spark_dsg.BoundingBox(bb_width, bb_center)
     attrs.color = r.semantic_color * 255
