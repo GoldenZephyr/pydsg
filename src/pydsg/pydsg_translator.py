@@ -571,6 +571,7 @@ def make_place_traversability(G, p):
         boundary_shapely=boundary_shapely,
         semantic_label="traversable",
         semantic_color=np.array([0, 1, 0]),
+        predicted_place=False,
     )
     return place
 

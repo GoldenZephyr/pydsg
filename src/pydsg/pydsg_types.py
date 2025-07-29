@@ -127,6 +127,7 @@ class TraversabilityPlace(DsgNode):
     boundary: np.ndarray
     boundary_shapely: geo.Polygon
     boundary_traversability: list
+    predicted_place: bool
 
 
 @dataclass
@@ -189,6 +190,7 @@ class TraversabilityPlaceLayer(DsgLayer):
     boundary: np.ndarray
     boundary_shapely: PolygonList
     boundary_traversability: np.ndarray
+    predicted_place: np.ndarray
 
     element_struct_type: type = TraversabilityPlace
 
