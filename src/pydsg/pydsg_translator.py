@@ -670,8 +670,8 @@ def get_sorted_connections(G, index_to_hydra_symbol, layer_name):
     layer_to_ord = {
         spark_dsg.DsgLayers.name_to_layer_id(spark_dsg.DsgLayers.OBJECTS): 1,
         spark_dsg.DsgLayers.name_to_layer_id(spark_dsg.DsgLayers.MESH_PLACES): 2,
-        spark_dsg.DsgLayers.name_to_layer_id(spark_dsg.DsgLayers.TRAVERSABILITY): 2.5,
         spark_dsg.DsgLayers.name_to_layer_id(spark_dsg.DsgLayers.PLACES): 3,
+        spark_dsg.DsgLayers.name_to_layer_id(spark_dsg.DsgLayers.TRAVERSABILITY): 3.5,
         spark_dsg.DsgLayers.name_to_layer_id(spark_dsg.DsgLayers.ROOMS): 4,
         spark_dsg.DsgLayers.name_to_layer_id(spark_dsg.DsgLayers.BUILDINGS): 5,
     }
