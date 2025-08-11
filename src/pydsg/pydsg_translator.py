@@ -629,7 +629,7 @@ def make_room(G, room_id_to_label, r):
     place_points = np.array(
         [G.get_node(c).attributes.position[:2] for c in r.children()]
     )
-    if len(place_points) == 0:
+    if len(place_points) < 3:
         bb = center_w_h_to_bb(attrs.position[:2], 1, 1)
     else:
         bb = cv2.boxPoints(cv2.minAreaRect(place_points.astype(np.float32)))
