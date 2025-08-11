@@ -189,7 +189,7 @@ class TraversabilityPlaceLayer(DsgLayer):
     distance: np.ndarray
     boundary: np.ndarray
     boundary_shapely: PolygonList
-    boundary_traversability: np.ndarray
+    boundary_traversability: list
     predicted_place: np.ndarray
 
     element_struct_type: type = TraversabilityPlace

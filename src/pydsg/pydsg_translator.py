@@ -556,8 +556,20 @@ def make_place_2d(G, semantic_id_to_label, semantics_to_color, pid_to_index, p):
 def make_place_traversability(G, p):
     attrs = p.attributes
 
-    boundary = np.array([bi.point + attrs.position for bi in attrs.boundary])
-    traversability = [bi.state for bi in attrs.boundary]
+    c = attrs.position[:2]
+    mins = p.attributes.boundary.min
+    maxes = p.attributes.boundary.max
+    boundary = np.zeros((4, 2))
+    boundary[0] = c + np.array([mins[0], mins[1]])
+    boundary[1] = c + np.array([mins[0], maxes[1]])
+    boundary[2] = c + np.array([maxes[0], maxes[1]])
+    boundary[3] = c + np.array([maxes[0], mins[1]])
+
+    # boundary = np.array([bi.point + attrs.position for bi in attrs.boundary])
+
+    # traversability = [bi.state for bi in attrs.boundary]
+    traversability = attrs.boundary.states
+
     boundary_shapely = geo.Polygon(boundary[:, :2])
     shapely.prepare(boundary_shapely)
 
@@ -997,13 +1009,15 @@ def py_to_spark_place2d(p, label_to_semantic_id):
 def py_to_spark_traversability_place(p):
     attrs = spark_dsg.TraversabilityNodeAttributes()
     attrs.position = p.center
-    boundary = []
-    for point, state in zip(p.boundary, p.boundary_traversability):
-        bi = spark_dsg.BoundaryInfo()
-        bi.point = point
-        bi.state = state
-        boundary.append(bi)
-    attrs.boundary = boundary
+
+    mins = np.min(p.boundary, axis=0)
+    maxes = np.max(p.boundary, axis=0)
+    bi = spark_dsg.BoundaryInfo()
+    bi.min = mins[:2] - p.center[:2]
+    bi.max = maxes[:2] - p.center[:2]
+    bi.states = p.boundary_traversability
+
+    attrs.boundary = bi
     attrs.distance = p.distance
     return attrs
 
