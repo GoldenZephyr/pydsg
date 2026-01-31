@@ -31,7 +31,6 @@ def remove_extra_str_from_edge_map(symbols, dictionary):
 
 @dataclass
 class DsgLayer(Serializable, SoAIndexing, StructAppend):
-
     hydra_symbol: list
     from_hydra: np.ndarray
     center: np.ndarray
@@ -123,11 +122,14 @@ class Place2d(DsgNode):
 class TraversabilityPlace(DsgNode):
     """Class for individual traversability place"""
 
-    distance: float
+    radii: np.ndarray
+    boundary_traversability: list
+    min_radius: float
+    max_radius: float
+    predicted_place: bool
+
     boundary: np.ndarray
     boundary_shapely: geo.Polygon
-    boundary_traversability: list
-    predicted_place: bool
 
 
 @dataclass
@@ -186,10 +188,13 @@ class Place2dLayer(DsgLayer):
 class TraversabilityPlaceLayer(DsgLayer):
     """Class representing all traversability places"""
 
-    distance: np.ndarray
+    radii: np.ndarray
+    boundary_traversability: list
+    min_radius: np.ndarray
+    max_radius: np.ndarray
+
     boundary: np.ndarray
     boundary_shapely: PolygonList
-    boundary_traversability: list
     predicted_place: np.ndarray
 
     element_struct_type: type = TraversabilityPlace
@@ -341,7 +346,6 @@ class PyDSG(Serializable):
         return fields
 
     def cleanup(self):
-
         full_symbol_list = []
         if self.objects is not None:
             full_symbol_list += self.objects.hydra_symbol

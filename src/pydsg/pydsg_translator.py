@@ -27,6 +27,9 @@ import yaml
 from functools import partial
 import cv2
 import parse
+import logging
+
+logger = logging.getLogger(__name__)
 
 SEMANTICS_TO_COLOR = np.array(
     [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1], [0, 1, 1], [1, 1, 1]]
@@ -266,7 +269,6 @@ def remove_neighbor_edge(pdsg, s, t):
 
 
 def remove_place_edge(sg, i, j):
-
     sg = copy.copy(sg)
     sg.places_2d = copy.copy(sg.places_2d)
     sg.places_2d.connectivity = [
@@ -556,19 +558,16 @@ def make_place_2d(G, semantic_id_to_label, semantics_to_color, pid_to_index, p):
 def make_place_traversability(G, p):
     attrs = p.attributes
 
-    c = attrs.position[:2]
-    mins = p.attributes.boundary.min
-    maxes = p.attributes.boundary.max
-    boundary = np.zeros((4, 2))
-    boundary[0] = c + np.array([mins[0], mins[1]])
-    boundary[1] = c + np.array([mins[0], maxes[1]])
-    boundary[2] = c + np.array([maxes[0], maxes[1]])
-    boundary[3] = c + np.array([maxes[0], mins[1]])
+    boundary = []
+    N = len(attrs.radii)
+    for idx, r in enumerate(attrs.radii):
+        theta = idx * 2 * np.pi / N
+        x = attrs.position[0] + r * np.cos(theta)
+        y = attrs.position[1] + r * np.sin(theta)
+        boundary.append([x, y])
+    boundary = np.array(boundary)
 
-    # boundary = np.array([bi.point + attrs.position for bi in attrs.boundary])
-
-    # traversability = [bi.state for bi in attrs.boundary]
-    traversability = attrs.boundary.states
+    traversability = attrs.states
 
     boundary_shapely = geo.Polygon(boundary[:, :2])
     shapely.prepare(boundary_shapely)
@@ -577,7 +576,9 @@ def make_place_traversability(G, p):
         hydra_symbol=str(p.id),
         from_hydra=True,
         center=attrs.position,
-        distance=attrs.distance,
+        radii=attrs.radii,
+        min_radius=np.min(attrs.radii),
+        max_radius=np.max(attrs.radii),
         boundary=boundary,
         boundary_traversability=traversability,
         boundary_shapely=boundary_shapely,
@@ -585,6 +586,7 @@ def make_place_traversability(G, p):
         semantic_color=np.array([0, 1, 0]),
         predicted_place=False,
     )
+
     return place
 
 
@@ -633,7 +635,6 @@ def make_object(
 
 
 def make_room(G, room_id_to_label, r):
-
     attrs = r.attributes
     label = room_id_to_label[attrs.semantic_label]
     color = r.attributes.color
@@ -965,7 +966,6 @@ def spark_dsg_to_pydsg(
 
 
 def add_edges_from_pydsg(G, layer, sibling_probabilities=None):
-
     if layer.sibling_dict is not None:
         for pi in layer.hydra_symbol:
             if pi not in layer.sibling_dict:
@@ -1058,7 +1058,6 @@ def py_to_spark_objects(o, label_to_semantic_id):
 
 
 def py_to_spark_rooms(r, room_label_to_id):
-
     attrs = spark_dsg.RoomNodeAttributes()
     attrs.name = r.hydra_symbol if r.semantic_label != "unknown" else "?"
     attrs.position = r.center
@@ -1085,7 +1084,6 @@ def py_to_spark_rooms(r, room_label_to_id):
 def pydsg_to_spark_dsg(
     pdsg, label_to_semantic_id, room_label_to_id, G=None, add_filter=lambda x: True
 ):
-
     if G is None:
         layers = [1, 2, 3, 4, 5]
         G = spark_dsg.DynamicSceneGraph(layers)
@@ -1151,7 +1149,6 @@ def pydsg_to_spark_dsg(
 
 
 if __name__ == "__main__":
-
     import matplotlib.pyplot as plt
 
     labelspace_path = "/home/ubuntu/hermes_ws/src/hermes/hydra/config/label_spaces/ade20k_full_label_space.yaml"
