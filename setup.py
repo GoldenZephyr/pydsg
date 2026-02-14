@@ -1,11 +1,16 @@
-# ! DO NOT MANUALLY INVOKE THIS setup.py, USE CATKIN INSTEAD
-from distutils.core import setup
-from catkin_pkg.python_setup import generate_distutils_setup
+from setuptools import find_packages, setup
 
-# fetch values from package.xml
-setup_args = generate_distutils_setup(
-    packages=["pydsg"],
+setup(
+    name="pydsg",
+    version="0.0.1",
+    url="",
+    author="",
+    author_email="",
+    description="Central interface for planning pipeline(s)",
     package_dir={"": "src"},
+    packages=find_packages("src"),
+    install_requires=[
+        "numpy",
+    ],
 )
-setup(**setup_args)
 

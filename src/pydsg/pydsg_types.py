@@ -31,7 +31,6 @@ def remove_extra_str_from_edge_map(symbols, dictionary):
 
 @dataclass
 class DsgLayer(Serializable, SoAIndexing, StructAppend):
-
     hydra_symbol: list
     from_hydra: np.ndarray
     center: np.ndarray
@@ -120,6 +119,20 @@ class Place2d(DsgNode):
 
 
 @dataclass
+class TraversabilityPlace(DsgNode):
+    """Class for individual traversability place"""
+
+    radii: np.ndarray
+    boundary_traversability: list
+    min_radius: float
+    max_radius: float
+    predicted_place: bool
+
+    boundary: np.ndarray
+    boundary_shapely: geo.Polygon
+
+
+@dataclass
 class Place3d(DsgNode):
     """Class for individual 3d place"""
 
@@ -172,6 +185,22 @@ class Place2dLayer(DsgLayer):
 
 
 @dataclass
+class TraversabilityPlaceLayer(DsgLayer):
+    """Class representing all traversability places"""
+
+    radii: np.ndarray
+    boundary_traversability: list
+    min_radius: np.ndarray
+    max_radius: np.ndarray
+
+    boundary: np.ndarray
+    boundary_shapely: PolygonList
+    predicted_place: np.ndarray
+
+    element_struct_type: type = TraversabilityPlace
+
+
+@dataclass
 class Place3dLayer(DsgLayer):
     """Class representing all 3d places"""
 
@@ -214,6 +243,7 @@ class PyDSG(Serializable):
 
     objects: ObjectLayer = None
     places_2d: Place2dLayer = None
+    places_traversability: TraversabilityPlaceLayer = None
     places_3d: Place3dLayer = None
     rooms: RoomLayer = None
     buildings: BuildingLayer = None
@@ -226,6 +256,10 @@ class PyDSG(Serializable):
             return self.objects.parent_dict[key]
         elif self.places_2d is not None and key in self.places_2d:
             return self.places_2d.parent_dict[key]
+        elif (
+            self.places_traversability is not None and key in self.places_traversability
+        ):
+            return self.places_traversability.parent_dict[key]
         elif self.places_3d is not None and key in self.places_3d:
             return self.places_3d.parent_dict[key]
         elif self.rooms is not None and key in self.rooms:
@@ -238,6 +272,10 @@ class PyDSG(Serializable):
             return self.objects.sibling_dict[key]
         elif self.places_2d is not None and key in self.places_2d:
             return self.places_2d.sibling_dict[key]
+        elif (
+            self.places_traversability is not None and key in self.places_traversability
+        ):
+            return self.places_traversability.sibling_dict[key]
         elif self.places_3d is not None and key in self.places_3d:
             return self.places_3d.sibling_dict[key]
         elif self.rooms is not None and key in self.rooms:
@@ -250,6 +288,10 @@ class PyDSG(Serializable):
             return self.objects.children_dict[key]
         elif self.places_2d is not None and key in self.places_2d:
             return self.places_2d.children_dict[key]
+        elif (
+            self.places_traversability is not None and key in self.places_traversability
+        ):
+            return self.places_traversability.children_dict[key]
         elif self.places_3d is not None and key in self.places_3d:
             return self.places_3d.children_dict[key]
         elif self.rooms is not None and key in self.rooms:
@@ -262,6 +304,10 @@ class PyDSG(Serializable):
             return self.objects[key]
         elif self.places_2d is not None and key in self.places_2d:
             return self.places_2d[key]
+        elif (
+            self.places_traversability is not None and key in self.places_traversability
+        ):
+            return self.places_traversability[key]
         elif self.places_3d is not None and key in self.places_3d:
             return self.places_3d[key]
         elif self.rooms is not None and key in self.rooms:
@@ -289,6 +335,8 @@ class PyDSG(Serializable):
             fields += self.objects.get_unserializable_fields()
         if self.places_2d is not None:
             fields += self.places_2d.get_unserializable_fields()
+        if self.places_traversability is not None:
+            fields += self.places_traversability.get_unserializable_fields()
         if self.places_3d is not None:
             fields += self.places_3d.get_unserializable_fields()
         if self.rooms is not None:
@@ -298,12 +346,13 @@ class PyDSG(Serializable):
         return fields
 
     def cleanup(self):
-
         full_symbol_list = []
         if self.objects is not None:
             full_symbol_list += self.objects.hydra_symbol
         if self.places_2d is not None:
             full_symbol_list += self.places_2d.hydra_symbol
+        if self.places_traversability is not None:
+            full_symbol_list += self.places_traversability.hydra_symbol
         if self.places_3d is not None:
             full_symbol_list += self.places_3d.hydra_symbol
         if self.rooms is not None:
@@ -315,6 +364,8 @@ class PyDSG(Serializable):
             self.objects.cleanup(full_symbol_list)
         if self.places_2d is not None:
             self.places_2d.cleanup(full_symbol_list)
+        if self.places_traversability is not None:
+            self.places_traversability.cleanup(full_symbol_list)
         if self.places_3d is not None:
             self.places_3d.cleanup(full_symbol_list)
         if self.rooms is not None:
